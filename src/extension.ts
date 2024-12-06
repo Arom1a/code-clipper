@@ -3,6 +3,7 @@
 import * as vscode from "vscode";
 import { exec } from "child_process";
 import { promisify } from "util";
+import puppeteer from "puppeteer-core";
 
 const execAsync = promisify(exec);
 
@@ -12,12 +13,12 @@ async function getClipboardHTML(): Promise<string> {
       await execAsync("osascript -e 'get «class HTML» of (the clipboard as record)'")
     ).stdout.trim();
     const hexResult = stdout.substring(10, stdout.length - 1);
-    console.log(`hexResult: ${hexResult}`);
+    // console.log(`hexResult: ${hexResult}`);
     const buffer = Buffer.from(hexResult, "hex");
     const originalResult = buffer.toString();
     return originalResult;
-  } catch (error) {
-    console.error(`Error fetching clipboard data: ${error}`);
+  } catch (err) {
+    console.error(`Error fetching clipboard data: ${err}`);
     return "";
   }
 }
@@ -60,14 +61,51 @@ async function setClipboard(formattedHTML: string, plainText: string) {
   try {
     await execAsync(`osascript -e 'set the clipboard to {«class HTML»:«data HTML${hexHTML}»}'`);
     console.log("succeed");
-  } catch (error) {
-    console.error(`Error setting the clipboard: ${error}`);
+  } catch (err) {
+    console.error(`Error setting the clipboard: ${err}`);
     return;
   }
 }
 
-function outputAsPng(context: vscode.ExtensionContext) {
-  console.log(context.storageUri);
+async function outputHTMLStringAsImage(context: vscode.ExtensionContext, HTMLString: string) {
+  try {
+    const fileSystem = vscode.workspace.fs;
+    await fileSystem.writeFile(
+      vscode.Uri.joinPath(context.globalStorageUri, `test.html`),
+      Buffer.from(HTMLString)
+    );
+  } catch (err) {
+    console.error(`Error when writing to file: ${err}`);
+  }
+
+  const browser = await puppeteer.launch({
+    executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    args: ["--headless"],
+  });
+  const page = await browser.newPage();
+  // set th screen to be high resolution to get better screenshots
+  await page.setViewport({ width: 800, height: 800, deviceScaleFactor: 2 });
+  const selector = "body > div:nth-child(1)";
+  try {
+    console.log(vscode.Uri.joinPath(context.globalStorageUri, `test.html`).fsPath);
+    await page.goto(`file://${vscode.Uri.joinPath(context.globalStorageUri, `test.html`).fsPath}`);
+  } catch (err) {
+    console.error(`Error when opening the file: ${err}`);
+    return;
+  }
+  await page.waitForSelector(selector);
+
+  const element = await page.$(selector);
+
+  try {
+    await element?.screenshot({
+      path: vscode.Uri.joinPath(context.globalStorageUri, `test.png`).fsPath,
+    });
+  } catch (err) {
+    console.error(`Error when taking the screenshot: ${err}`);
+  }
+
+  console.log("print finished");
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -85,16 +123,16 @@ export function activate(context: vscode.ExtensionContext) {
       // console.log(`originalText: ${originalText}`);
 
       const withLineNumberHTML: string = addLineNumberToHTML(originalHTML);
-      console.log(`withLineNumberHTML: ${withLineNumberHTML}`);
+      // console.log(`withLineNumberHTML: ${withLineNumberHTML}`);
       const onlyLineNumberText: string = addLineNumberToText(originalText);
-      console.log(`onlyLineNumberText: ${onlyLineNumberText}`);
+      // console.log(`onlyLineNumberText: ${onlyLineNumberText}`);
 
-      setClipboard(withLineNumberHTML, onlyLineNumberText);
+      // setClipboard(withLineNumberHTML, onlyLineNumberText);
 
-      outputAsPng(context);
+      outputHTMLStringAsImage(context, withLineNumberHTML);
     }
   );
-  context.subscriptions.push(copyWithLineNumAndHighliting)
+  context.subscriptions.push(copyWithLineNumAndHighliting);
 }
 
 // This method is called when your extension is deactivated
