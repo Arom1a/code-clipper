@@ -104,6 +104,7 @@ async function outputHTMLStringAsImage(context: vscode.ExtensionContext, HTMLStr
   } catch (err) {
     console.error(`Error when taking the screenshot: ${err}`);
   }
+  browser.close();
 
   console.log("print finished");
 }
