@@ -4,13 +4,14 @@ import * as vscode from "vscode";
 import { exec } from "child_process";
 import { promisify } from "util";
 import puppeteer from "puppeteer-core";
+import { exit } from "process";
 
 const execAsync = promisify(exec);
 
 async function getClipboardHTML(): Promise<string> {
   try {
     const stdout = (
-      await execAsync("osascript -e 'get «class HTML» of (the clipboard as record)'")
+      await execAsync('osascript -e "get «class HTML» of (the clipboard as record)"')
     ).stdout.trim();
     const hexResult = stdout.substring(10, stdout.length - 1);
     // console.log(`hexResult: ${hexResult}`);
@@ -19,11 +20,20 @@ async function getClipboardHTML(): Promise<string> {
     return originalResult;
   } catch (err) {
     console.error(`Error fetching clipboard data: ${err}`);
-    return "";
+    exit(1);
   }
 }
 
 async function getClipboardText(): Promise<string> {
+  try {
+    const stdout = (
+      await execAsync('osascript -e "get «class utf8» of (the clipboard as record)"')
+    ).stdout.trim();
+    return stdout;
+  } catch (err) {
+    console.error(`Error fetching clipboard data: ${err}`);
+    exit(1);
+  }
   return "";
 }
 
@@ -31,8 +41,9 @@ function addLineNumberToHTML(originalHTML: string): string {
   let n = 1;
   let result = originalHTML
     .replaceAll("<div><span", '<div><span id="lineNum"> 0 </span><span')
-    .replaceAll("<br>", '<span id="lineNum"> 0 </span><br>');
-  // console.log(process);
+    .replaceAll("<br>", '<span id="lineNum"> 0 </span><br>')
+    .replace('<div style="', '<div style="width: fit-content; padding: 1em 2em 1em 0; ');
+  // console.log(result);
 
   while (result.includes('<span id="lineNum"> 0 </span>')) {
     result = result.replace(
@@ -48,22 +59,46 @@ function addLineNumberToHTML(originalHTML: string): string {
 }
 
 function addLineNumberToText(originalText: string): string {
-  return "";
+  let result: string = "";
+  originalText.split("\n").forEach((line, i) => {
+    result += (i + 1).toString() + ": " + line + "\n";
+  });
+  result = result.trim();
+
+  // let result: string = originalText.replaceAll("\n", `\n${{n;n++}}: `);
+  return result;
 }
 
-async function setClipboard(formattedHTML: string, plainText: string) {
+async function setClipboard(
+  context: vscode.ExtensionContext,
+  formattedHTML: string,
+  plainText: string
+) {
   let hexHTML = "";
   for (let i = 0; i < formattedHTML.length; i++) {
     hexHTML += formattedHTML.charCodeAt(i).toString(16);
   }
-  console.log(hexHTML);
+  // console.log(hexHTML);
+
+  const fileSystem = vscode.workspace.fs;
+  let scriptUir: vscode.Uri = vscode.Uri.joinPath(context.globalStorageUri, "setClipboard.scpt");
+
+  await fileSystem.writeFile(
+    scriptUir,
+    Buffer.from(
+      `set the clipboard to {«class HTML»:«data HTML${hexHTML}», Unicode text:"${plainText.replaceAll(
+        '"',
+        '\\"'
+      )}"}`
+    )
+  );
 
   try {
-    await execAsync(`osascript -e 'set the clipboard to {«class HTML»:«data HTML${hexHTML}»}'`);
-    console.log("succeed");
+    await execAsync(`osascript '${scriptUir.fsPath}'`);
+    console.log("succeed setting the clipboard");
   } catch (err) {
     console.error(`Error setting the clipboard: ${err}`);
-    return;
+    exit(1);
   }
 }
 
@@ -87,7 +122,6 @@ async function outputHTMLStringAsImage(context: vscode.ExtensionContext, HTMLStr
   await page.setViewport({ width: 800, height: 800, deviceScaleFactor: 2 });
   const selector = "body > div:nth-child(1)";
   try {
-    console.log(vscode.Uri.joinPath(context.globalStorageUri, `test.html`).fsPath);
     await page.goto(`file://${vscode.Uri.joinPath(context.globalStorageUri, `test.html`).fsPath}`);
   } catch (err) {
     console.error(`Error when opening the file: ${err}`);
@@ -104,9 +138,9 @@ async function outputHTMLStringAsImage(context: vscode.ExtensionContext, HTMLStr
   } catch (err) {
     console.error(`Error when taking the screenshot: ${err}`);
   }
-  browser.close();
+  await browser.close();
 
-  console.log("print finished");
+  console.log("screenshot saved");
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -128,7 +162,7 @@ export function activate(context: vscode.ExtensionContext) {
       const onlyLineNumberText: string = addLineNumberToText(originalText);
       // console.log(`onlyLineNumberText: ${onlyLineNumberText}`);
 
-      // setClipboard(withLineNumberHTML, onlyLineNumberText);
+      setClipboard(context, withLineNumberHTML, onlyLineNumberText);
 
       outputHTMLStringAsImage(context, withLineNumberHTML);
     }
