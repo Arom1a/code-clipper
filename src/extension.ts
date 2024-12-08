@@ -1,5 +1,3 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import { exec } from "child_process";
 import { promisify } from "util";
@@ -37,6 +35,10 @@ async function getClipboardText(): Promise<string> {
   return "";
 }
 
+export function formattedLineNumber(num: number, max: number): string {
+  return num.toString().padStart(max.toString().length, " ");
+}
+
 function addLineNumberToHTML(originalHTML: string): string {
   let n = 1;
   let result = originalHTML
@@ -45,12 +47,17 @@ function addLineNumberToHTML(originalHTML: string): string {
     .replace('<div style="', '<div style="width: fit-content; padding: 1em 2em 1em 0; ');
   // console.log(result);
 
+  const maxLineNumber = result.match(new RegExp('<span id="lineNum"> 0 </span>', "g"))?.length ?? 0;
+  // console.log(`maxLineNumber in ToHTML: ${maxLineNumber}`);
+  if (maxLineNumber === 0) {
+    console.error("Incorrect HTML: No line number found");
+    exit(1);
+  }
+
   while (result.includes('<span id="lineNum"> 0 </span>')) {
     result = result.replace(
       '<span id="lineNum"> 0 </span>',
-      `<span id="lineNum" style="opacity: 0.5"> ${
-        n < 10 ? ` ${n.toString()}` : n.toString()
-      } </span>`
+      `<span id="lineNum" style="opacity: 0.5"> ${formattedLineNumber(n, maxLineNumber)} </span>`
     );
     n++;
   }
@@ -60,13 +67,15 @@ function addLineNumberToHTML(originalHTML: string): string {
 
 function addLineNumberToText(originalText: string): string {
   let result: string = "";
-  originalText.split("\n").forEach((line, i) => {
-    result += (i + 1).toString() + ": " + line + "\n";
-  });
-  result = result.trim();
 
-  // let result: string = originalText.replaceAll("\n", `\n${{n;n++}}: `);
-  return result;
+  const maxLineNumber = (originalText.match(new RegExp("\n", "g"))?.length ?? 0) + 1;
+  // console.log(`maxLineNumber in ToText: ${maxLineNumber}`);
+
+  originalText.split("\n").forEach((line, i) => {
+    result += formattedLineNumber(i + 1, maxLineNumber).replaceAll(" ", "0") + ": " + line + "\n";
+  });
+
+  return result.trim();
 }
 
 async function setClipboard(
@@ -82,7 +91,6 @@ async function setClipboard(
 
   const fileSystem = vscode.workspace.fs;
   let scriptUir: vscode.Uri = vscode.Uri.joinPath(context.globalStorageUri, "setClipboard.scpt");
-
   await fileSystem.writeFile(
     scriptUir,
     Buffer.from(
@@ -142,6 +150,8 @@ async function outputHTMLStringAsImage(context: vscode.ExtensionContext, HTMLStr
 
   console.log("screenshot saved");
 }
+
+function putImageInClipboard() {}
 
 export function activate(context: vscode.ExtensionContext) {
   console.log(
