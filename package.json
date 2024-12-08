@@ -1,7 +1,7 @@
 {
-  "name": "copy-with-line-number-and-syntax-highlighting",
-  "displayName": "Copy with Line Number and Syntax Highlighting",
-  "description": "tbd",
+  "name": "code-clipper",
+  "displayName": "Code Clipper",
+  "description": "Clip your code with your syntax highlighting and line number!",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.95.0"
@@ -14,8 +14,8 @@
   "contributes": {
     "commands": [
       {
-        "command": "copy-with-filename.copy-with-line-number-and-syntax-highlighting",
-        "title": "Copy With Line Number and Syntax Highlighting"
+        "command": "code-clipper.clip-code",
+        "title": "Clip Code"
       }
     ]
   },

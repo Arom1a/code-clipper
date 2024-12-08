@@ -155,11 +155,11 @@ function putImageInClipboard() {}
 
 export function activate(context: vscode.ExtensionContext) {
   console.log(
-    'Congratulations, your extension "copy-with-line-number-and-syntax-highlighting" is now active!'
+    'Congratulations, your extension "Code Clipper" is now active!'
   );
 
-  const copyWithLineNumAndHighliting = vscode.commands.registerCommand(
-    "copy-with-filename.copy-with-line-number-and-syntax-highlighting",
+  const clipcode = vscode.commands.registerCommand(
+    "code-clipper.clip-code",
     async () => {
       vscode.commands.executeCommand("editor.action.clipboardCopyWithSyntaxHighlightingAction");
       const originalHTML: string = await getClipboardHTML();
@@ -177,7 +177,7 @@ export function activate(context: vscode.ExtensionContext) {
       outputHTMLStringAsImage(context, withLineNumberHTML);
     }
   );
-  context.subscriptions.push(copyWithLineNumAndHighliting);
+  context.subscriptions.push(clipcode);
 }
 
 // This method is called when your extension is deactivated

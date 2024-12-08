@@ -1,9 +1,9 @@
 # Change Log
 
-All notable changes to the "copy-with-line-number-and-syntax-highlighting" extension will be documented in this file.
-
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-- Initial release
+- OS X support
+
+<!-- ## [1.0.0] - 2025-01-01 - [initial release] -->

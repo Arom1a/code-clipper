@@ -1,11 +1,14 @@
-# Copy With Line Number and Syntax Highlighting
+# Code Clipper
+
+Clip your code with your IDE's theme and line numbers!
 
 ## Features
 
-Not alike ray.so or other code snip
-No internet needed
-
-also uses your own code highlighting!!!
+- No Internet needed
+- Use your VSCode's theme and syntax highlighting
+- Mark line numbers
+- Copy the screenshot to your clipboard
+- Copy the plain text with line numbers to your clipboard
 
 > Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
 
@@ -13,7 +16,10 @@ also uses your own code highlighting!!!
 
 puppeteer is required
 
-installation: tbd
+installation:
+
+<!-- Special for Linux:
+`xclip` (maybe) should be installed -->
 
 ## Extension Settings
 
@@ -23,10 +29,16 @@ For example:
 
 This extension contributes the following settings:
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+- `myExtension.enable`: Enable/disable this extension.
+- `myExtension.thing`: Set to `blah` to do something.
 
 may config output png or webp or jpg
+
+## How is This Achieved?
+
+VSCode's buitlin command `Copy With Syntax Highlighting`
+modify the html
+use puppeteer to generate a picture
 
 ## Release Notes
 
