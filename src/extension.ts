@@ -151,15 +151,68 @@ async function outputHTMLStringAsImage(context: vscode.ExtensionContext, HTMLStr
   console.log("screenshot saved");
 }
 
-function putImageInClipboard() {}
+async function putImageInClipboard(context: vscode.ExtensionContext) {
+  console.log(vscode.Uri.joinPath(context.globalStorageUri, `test.png`).fsPath);
+  try {
+    execAsync(
+      `osascript -e "set the clipboard to {«class PNGf»:«data PNGf$(xxd -ps "${
+        vscode.Uri.joinPath(context.globalStorageUri, `test.png`).fsPath
+      }" | tr -d '\n')»}"`
+    );
+  } catch (err) {
+    console.log(`Error putting image in clipboard: ${err}`);
+    exit(1);
+  }
+}
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log(
-    'Congratulations, your extension "Code Clipper" is now active!'
-  );
+  console.log('Congratulations, your extension "Code Clipper" is now active!');
 
-  const clipcode = vscode.commands.registerCommand(
-    "code-clipper.clip-code",
+  const clipCode = vscode.commands.registerCommand("code-clipper.clip-code", async () => {
+    vscode.commands.executeCommand("editor.action.clipboardCopyWithSyntaxHighlightingAction");
+    const originalHTML: string = await getClipboardHTML();
+    // console.log(`originalHTML: ${originalHTML}`);
+    const originalText: string = await getClipboardText();
+    // console.log(`originalText: ${originalText}`);
+
+    const withLineNumberHTML: string = addLineNumberToHTML(originalHTML);
+    // console.log(`withLineNumberHTML: ${withLineNumberHTML}`);
+    const onlyLineNumberText: string = addLineNumberToText(originalText);
+    // console.log(`onlyLineNumberText: ${onlyLineNumberText}`);
+
+    // setClipboard(context, withLineNumberHTML, onlyLineNumberText);
+
+    outputHTMLStringAsImage(context, withLineNumberHTML);
+
+    putImageInClipboard(context);
+
+    // vscode.log("image generated success")
+  });
+  context.subscriptions.push(clipCode);
+
+  const clipCodeAsPlainText = vscode.commands.registerCommand(
+    "code-clipper.clip-code-as-plain-text",
+    async () => {
+      vscode.commands.executeCommand("editor.action.clipboardCopyWithSyntaxHighlightingAction");
+      const originalHTML: string = await getClipboardHTML();
+      // console.log(`originalHTML: ${originalHTML}`);
+      const originalText: string = await getClipboardText();
+      // console.log(`originalText: ${originalText}`);
+
+      const withLineNumberHTML: string = addLineNumberToHTML(originalHTML);
+      // console.log(`withLineNumberHTML: ${withLineNumberHTML}`);
+      const onlyLineNumberText: string = addLineNumberToText(originalText);
+      // console.log(`onlyLineNumberText: ${onlyLineNumberText}`);
+
+      setClipboard(context, withLineNumberHTML, onlyLineNumberText);
+
+      // vscode.log(success code plain text to clipboard)
+    }
+  );
+  context.subscriptions.push(clipCodeAsPlainText);
+
+  const clipCodeSaveImageOnly = vscode.commands.registerCommand(
+    "code-clipper.clip-code-save-image-only",
     async () => {
       vscode.commands.executeCommand("editor.action.clipboardCopyWithSyntaxHighlightingAction");
       const originalHTML: string = await getClipboardHTML();
@@ -175,9 +228,11 @@ export function activate(context: vscode.ExtensionContext) {
       setClipboard(context, withLineNumberHTML, onlyLineNumberText);
 
       outputHTMLStringAsImage(context, withLineNumberHTML);
+
+      // vscode.log("image generated success")
     }
   );
-  context.subscriptions.push(clipcode);
+  context.subscriptions.push(clipCodeSaveImageOnly);
 }
 
 // This method is called when your extension is deactivated

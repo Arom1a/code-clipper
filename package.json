@@ -16,6 +16,14 @@
       {
         "command": "code-clipper.clip-code",
         "title": "Clip Code"
+      },
+      {
+        "command": "code-clipper.clip-code-as-plain-text",
+        "title": "Clip Code as Plain Text"
+      },
+      {
+        "command": "code-clipper.clip-code-save-image-only",
+        "title": "Clip Code Save Image Only"
       }
     ]
   },

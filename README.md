@@ -21,6 +21,28 @@ installation:
 <!-- Special for Linux:
 `xclip` (maybe) should be installed -->
 
+## Usage
+
+Shift + Command + p to open the command palate.
+
+Then,
+
+- use "Clip Code" to copy the clipped image to clipboard
+- use "Clip Code as Plain Text" to copy plain code with line number to clipboard
+- use "Clip Code Save Image Only" to save the clipped image and open the directory (you can set to open or not in settings)
+
+Example:
+
+```rust
+fn main() {
+    let x = 1;
+}
+```
+
+Using "Clip Code":
+
+Using "Clip Code as Plain Text":
+
 ## Extension Settings
 
 Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
