@@ -110,13 +110,35 @@ async function setClipboard(
   }
 }
 
-async function outputHTMLStringAsImage(context: vscode.ExtensionContext, HTMLString: string) {
+async function outputHTMLStringAsImage(
+  context: vscode.ExtensionContext,
+  HTMLString: string
+): Promise<string> {
+  let date = new Date()
+    .toLocaleString("en-US", { year: "numeric", month: "2-digit", day: "numeric" })
+    .split("/");
+  let fileBaseName =
+    date[2] +
+    "-" +
+    date[0] +
+    "-" +
+    date[1] +
+    "_" +
+    new Date()
+      .toLocaleString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      })
+      .replaceAll(":", "-");
+  // console.log(`baseName: ${baseName}`);
+  const fileUri = vscode.Uri.joinPath(context.globalStorageUri, `${fileBaseName}.html`);
+
   try {
     const fileSystem = vscode.workspace.fs;
-    await fileSystem.writeFile(
-      vscode.Uri.joinPath(context.globalStorageUri, `test.html`),
-      Buffer.from(HTMLString)
-    );
+
+    await fileSystem.writeFile(fileUri, Buffer.from(HTMLString));
   } catch (err) {
     console.error(`Error when writing to file: ${err}`);
   }
@@ -130,10 +152,10 @@ async function outputHTMLStringAsImage(context: vscode.ExtensionContext, HTMLStr
   await page.setViewport({ width: 800, height: 800, deviceScaleFactor: 2 });
   const selector = "body > div:nth-child(1)";
   try {
-    await page.goto(`file://${vscode.Uri.joinPath(context.globalStorageUri, `test.html`).fsPath}`);
+    await page.goto(`file://${fileUri.fsPath}`);
   } catch (err) {
     console.error(`Error when opening the file: ${err}`);
-    return;
+    exit(1);
   }
   await page.waitForSelector(selector);
 
@@ -141,7 +163,7 @@ async function outputHTMLStringAsImage(context: vscode.ExtensionContext, HTMLStr
 
   try {
     await element?.screenshot({
-      path: vscode.Uri.joinPath(context.globalStorageUri, `test.png`).fsPath,
+      path: vscode.Uri.joinPath(context.globalStorageUri, `${fileBaseName}.png`).fsPath,
     });
   } catch (err) {
     console.error(`Error when taking the screenshot: ${err}`);
@@ -149,14 +171,16 @@ async function outputHTMLStringAsImage(context: vscode.ExtensionContext, HTMLStr
   await browser.close();
 
   console.log("screenshot saved");
+
+  return fileBaseName;
 }
 
-async function putImageInClipboard(context: vscode.ExtensionContext) {
-  console.log(vscode.Uri.joinPath(context.globalStorageUri, `test.png`).fsPath);
+async function putImageInClipboard(context: vscode.ExtensionContext, fileBaseName: string) {
+  console.log(vscode.Uri.joinPath(context.globalStorageUri, `${fileBaseName}.png`).fsPath);
   try {
     execAsync(
       `osascript -e "set the clipboard to {«class PNGf»:«data PNGf$(xxd -ps "${
-        vscode.Uri.joinPath(context.globalStorageUri, `test.png`).fsPath
+        vscode.Uri.joinPath(context.globalStorageUri, `${fileBaseName}.png`).fsPath
       }" | tr -d '\n')»}"`
     );
   } catch (err) {
@@ -172,19 +196,19 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.executeCommand("editor.action.clipboardCopyWithSyntaxHighlightingAction");
     const originalHTML: string = await getClipboardHTML();
     // console.log(`originalHTML: ${originalHTML}`);
-    const originalText: string = await getClipboardText();
+    // const originalText: string = await getClipboardText();
     // console.log(`originalText: ${originalText}`);
 
     const withLineNumberHTML: string = addLineNumberToHTML(originalHTML);
     // console.log(`withLineNumberHTML: ${withLineNumberHTML}`);
-    const onlyLineNumberText: string = addLineNumberToText(originalText);
+    // const onlyLineNumberText: string = addLineNumberToText(originalText);
     // console.log(`onlyLineNumberText: ${onlyLineNumberText}`);
 
     // setClipboard(context, withLineNumberHTML, onlyLineNumberText);
 
-    outputHTMLStringAsImage(context, withLineNumberHTML);
+    const fileBaseName = await outputHTMLStringAsImage(context, withLineNumberHTML);
 
-    putImageInClipboard(context);
+    putImageInClipboard(context, fileBaseName);
 
     // vscode.log("image generated success")
   });
@@ -217,17 +241,15 @@ export function activate(context: vscode.ExtensionContext) {
       vscode.commands.executeCommand("editor.action.clipboardCopyWithSyntaxHighlightingAction");
       const originalHTML: string = await getClipboardHTML();
       // console.log(`originalHTML: ${originalHTML}`);
-      const originalText: string = await getClipboardText();
+      // const originalText: string = await getClipboardText();
       // console.log(`originalText: ${originalText}`);
 
       const withLineNumberHTML: string = addLineNumberToHTML(originalHTML);
       // console.log(`withLineNumberHTML: ${withLineNumberHTML}`);
-      const onlyLineNumberText: string = addLineNumberToText(originalText);
+      // const onlyLineNumberText: string = addLineNumberToText(originalText);
       // console.log(`onlyLineNumberText: ${onlyLineNumberText}`);
 
-      setClipboard(context, withLineNumberHTML, onlyLineNumberText);
-
-      outputHTMLStringAsImage(context, withLineNumberHTML);
+      const _fileBaseName = outputHTMLStringAsImage(context, withLineNumberHTML);
 
       // vscode.log("image generated success")
     }
