@@ -27,9 +27,8 @@ Shift + Command + p to open the command palate.
 
 Then,
 
-- use "Clip Code" to copy the clipped image to clipboard
-- use "Clip Code as Plain Text" to copy plain code with line number to clipboard
-- use "Clip Code Save Image Only" to save the clipped image and open the directory (you can set to open or not in settings)
+- use "Clip Code" to generate the code clip image and open the directory (behavior can be adjusted in settings)
+- use "Clip Code as Plain Text" to copy plain-text code with line number to clipboard
 
 Example:
 
@@ -51,8 +50,11 @@ For example:
 
 This extension contributes the following settings:
 
-- `myExtension.enable`: Enable/disable this extension.
-- `myExtension.thing`: Set to `blah` to do something.
+- puppeteer path: must have
+  common for MacOS: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+  common for Windows:
+  common for Linux:
+- openDirectoryAfterClipping: True (default) / False
 
 may config output png or webp or jpg
 

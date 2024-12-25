@@ -18,9 +18,9 @@ export class Clipper {
     throw new Error(`Method 'getClipboardText()' must be implemented`);
   }
 
-  async setClipboard(context: vscode.ExtensionContext, formattedHTML: string, plainText: string) {
+  async setClipboard(context: vscode.ExtensionContext, HTMLString: string, plainText: string) {
     context; // to prevent 'no-unused-vars'
-    formattedHTML; // to prevent 'no-unused-vars'
+    HTMLString; // to prevent 'no-unused-vars'
     plainText; // to prevent 'no-unused-vars'
     throw new Error(`Method 'setClipboard()' must be implemented`);
   }
@@ -54,7 +54,7 @@ export class Clipper {
       n++;
     }
 
-    return result;
+    return result.trim();
   }
 
   addLineNumberToText(originalText: string): string {
@@ -160,10 +160,10 @@ export class DarwinClipper extends Clipper {
     }
   }
 
-  async setClipboard(context: vscode.ExtensionContext, formattedHTML: string, plainText: string) {
+  async setClipboard(context: vscode.ExtensionContext, HTMLString: string, plainText: string) {
     let hexHTML = "";
-    for (let i = 0; i < formattedHTML.length; i++) {
-      hexHTML += formattedHTML.charCodeAt(i).toString(16);
+      for (let i = 0; i < HTMLString.length; i++) {
+      hexHTML += HTMLString.charCodeAt(i).toString(16);
     }
     // console.log(hexHTML);
 
