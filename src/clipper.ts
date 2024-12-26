@@ -14,6 +14,10 @@ export function formattedLineNumber(num: number, max: number): string {
 }
 
 export class Clipper {
+  async revealInFileExplorer(filePath: vscode.Uri) {
+    throw new Error(`Method 'revealInFileExplorer()' must be implemented`);
+  }
+
   async getClipboardHTML(): Promise<string> {
     throw new Error(`Method 'getClipboardHTML()' must be implemented`);
   }
@@ -132,6 +136,10 @@ export class Clipper {
 }
 
 export class DarwinClipper extends Clipper {
+  async revealInFileExplorer(filePath: vscode.Uri): Promise<void> {
+    await execAsync(`open -R "${filePath.fsPath}"`);
+  }
+
   async getClipboardHTML(): Promise<string> {
     try {
       const stdout = (
@@ -160,4 +168,40 @@ export class DarwinClipper extends Clipper {
 
 export class LinuxClipper extends Clipper {}
 
-export class WindowsClipper extends Clipper {}
+export class WindowsClipper extends Clipper {
+  async revealInFileExplorer(filePath: vscode.Uri): Promise<void> {
+    // IDK why this returns an exit code of 1
+    // Just catch it for convenience
+    try {
+      await execAsync(`explorer.exe /select,"${filePath.fsPath}"`);
+    } catch {}
+  }
+
+  async getClipboardHTML(): Promise<string> {
+    try {
+      const stdout = (
+        await execAsync(
+          'powershell.exe -Command "Add-Type -AssemblyName System.Windows.Forms; $clipboard = [System.Windows.Forms.Clipboard]::GetDataObject(); if ($clipboard.GetFormats() -contains \\"HTML Format\\") { $htmlData = $clipboard.GetData(\\"HTML Format\\"); Write-Output $htmlData; } else { Write-Output \\"-1\\" };"'
+        )
+      ).stdout.trim();
+      if (stdout === "-1") {
+        throw new Error(`Error fetching clipboard data: no HTML date founded in the clipboard`);
+      }
+      const start: number = stdout.search("<!--StartFragment-->") + "<!--StartFragment-->".length;
+      const end: number = stdout.search("<!--EndFragment-->");
+      const result = stdout.slice(start, end);
+      return result;
+    } catch (err) {
+      throw new Error(`Error fetching clipboard data: ${err}`);
+    }
+  }
+
+  async getClipboardText(): Promise<string> {
+    try {
+      const stdout = (await execAsync('powershell.exe -Command "get-Clipboard"')).stdout.trim();
+      return stdout;
+    } catch (err) {
+      throw new Error(`Error fetching clipboard data: ${err}`);
+    }
+  }
+}

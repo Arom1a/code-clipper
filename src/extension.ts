@@ -34,25 +34,11 @@ export function activate(context: vscode.ExtensionContext) {
     const originalHTML: string = await clipper.getClipboardHTML();
     const withLineNumberHTML: string = clipper.addLineNumberToHTML(originalHTML);
     const filePath = await clipper.outputHTMLStringAsImage(context, withLineNumberHTML);
-    if (openDirectoryAfterClipping) {
-      switch (OS) {
-        case "darwin":
-          await execAsync(`open -R "${filePath.fsPath}"`);
-          break;
-        case "win32":
-          break;
-        case "linux":
-          break;
-        default:
-          await vscode.window.showErrorMessage(
-            "Can not open the file explorer on your OS. " +
-              "Please open it yourself. " +
-              "(disable this message by setting openDirectoryAfterClipping to false)"
-          );
-          throw new Error("Can not open the file explorer");
-      }
-    }
-    await vscode.window.showInformationMessage(`The code clip is ready at "${filePath.fsPath}"!`);
+    if (openDirectoryAfterClipping) await clipper.revealInFileExplorer(filePath);
+    await vscode.window.showInformationMessage(
+      `The code clip is ready at "${filePath.fsPath}"!\n` +
+        "(disable this message by setting `openDirectoryAfterClipping` to false)"
+    );
   });
   context.subscriptions.push(clipCode);
 
