@@ -5,6 +5,10 @@ import puppeteer from "puppeteer-core";
 
 const execAsync = promisify(exec);
 
+const config = vscode.workspace.getConfiguration("code-clipper");
+const puppeteerPath = config.get("puppeteerPath");
+const clipSavingDirectory = config.get("clipSavingDirectory");
+
 export function formattedLineNumber(num: number, max: number): string {
   return num.toString().padStart(max.toString().length, " ");
 }
@@ -18,17 +22,8 @@ export class Clipper {
     throw new Error(`Method 'getClipboardText()' must be implemented`);
   }
 
-  async setClipboard(context: vscode.ExtensionContext, HTMLString: string, plainText: string) {
-    context; // to prevent 'no-unused-vars'
-    HTMLString; // to prevent 'no-unused-vars'
-    plainText; // to prevent 'no-unused-vars'
-    throw new Error(`Method 'setClipboard()' must be implemented`);
-  }
-
-  async putImageInClipboard(context: vscode.ExtensionContext, fileBaseName: string) {
-    context; // to prevent 'no-unused-vars'
-    fileBaseName; // to prevent 'no-unused-vars'
-    throw new Error(`Method 'putImageInClipboard()' must be implemented`);
+  async setClipboard(plainText: string) {
+    await vscode.env.clipboard.writeText(plainText);
   }
 
   addLineNumberToHTML(originalHTML: string): string {
@@ -73,7 +68,7 @@ export class Clipper {
   async outputHTMLStringAsImage(
     context: vscode.ExtensionContext,
     HTMLString: string
-  ): Promise<string> {
+  ): Promise<vscode.Uri> {
     let date = new Date()
       .toLocaleString("en-US", { year: "numeric", month: "2-digit", day: "numeric" })
       .split("/");
@@ -93,12 +88,11 @@ export class Clipper {
         })
         .replaceAll(":", "-");
     // console.log(`baseName: ${baseName}`);
-    const fileUri = vscode.Uri.joinPath(context.globalStorageUri, `${fileBaseName}.html`);
+    const HTMLUri = vscode.Uri.joinPath(context.globalStorageUri, `${fileBaseName}.html`);
 
+    const fileSystem = vscode.workspace.fs;
     try {
-      const fileSystem = vscode.workspace.fs;
-
-      await fileSystem.writeFile(fileUri, Buffer.from(HTMLString));
+      await fileSystem.writeFile(HTMLUri, Buffer.from(HTMLString));
     } catch (err) {
       throw new Error(`Error when writing to file: ${err}`);
     }
@@ -112,24 +106,32 @@ export class Clipper {
     await page.setViewport({ width: 800, height: 800, deviceScaleFactor: 2 });
     const selector = "body > div:nth-child(1)";
     try {
-      await page.goto(`file://${fileUri.fsPath}`);
+      await page.goto(`file://${HTMLUri.fsPath}`);
     } catch (err) {
       throw new Error(`Error when opening the file: ${err}`);
     }
     await page.waitForSelector(selector);
 
-    const element = await page.$(selector);
+    let imageUri = clipSavingDirectory
+      ? vscode.Uri.parse(clipSavingDirectory + `${fileBaseName}.png`)
+      : vscode.Uri.joinPath(context.globalStorageUri, `${fileBaseName}.png`);
+    try {
+      fileSystem.stat(vscode.Uri.joinPath(imageUri, "../"));
+    } catch {
+      fileSystem.createDirectory(vscode.Uri.joinPath(imageUri, "../"));
+    }
 
+    const element = await page.$(selector);
     try {
       await element?.screenshot({
-        path: vscode.Uri.joinPath(context.globalStorageUri, `${fileBaseName}.png`).fsPath,
+        path: imageUri.fsPath,
       });
     } catch (err) {
       throw new Error(`Error when taking the screenshot: ${err}`);
     }
     await browser.close();
 
-    return fileBaseName;
+    return imageUri;
   }
 }
 
@@ -157,44 +159,6 @@ export class DarwinClipper extends Clipper {
       return stdout;
     } catch (err) {
       throw new Error(`Error fetching clipboard data: ${err}`);
-    }
-  }
-
-  async setClipboard(context: vscode.ExtensionContext, HTMLString: string, plainText: string) {
-    let hexHTML = "";
-      for (let i = 0; i < HTMLString.length; i++) {
-      hexHTML += HTMLString.charCodeAt(i).toString(16);
-    }
-    // console.log(hexHTML);
-
-    const fileSystem = vscode.workspace.fs;
-    let scriptUir: vscode.Uri = vscode.Uri.joinPath(context.globalStorageUri, "setClipboard.scpt");
-    await fileSystem.writeFile(
-      scriptUir,
-      Buffer.from(
-        `set the clipboard to {«class HTML»:«data HTML${hexHTML}», Unicode text:"${plainText.replaceAll(
-          '"',
-          '\\"'
-        )}"}`
-      )
-    );
-
-    try {
-      await execAsync(`osascript '${scriptUir.fsPath}'`);
-    } catch (err) {
-      throw new Error(`Error setting the clipboard: ${err}`);
-    }
-  }
-
-  async putImageInClipboard(context: vscode.ExtensionContext, fileBaseName: string) {
-    try {
-      execAsync(
-        `osascript -e "set the clipboard to {«class PNGf»:«data PNGf$(xxd -ps "${
-          vscode.Uri.joinPath(context.globalStorageUri, `${fileBaseName}.png`).fsPath
-        }" | tr -d '\n')»}"`
-      );
-    } catch (err) {
-      throw new Error(`Error putting image in clipboard: ${err}`);
     }
   }
 }

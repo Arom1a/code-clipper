@@ -1,11 +1,18 @@
 import * as vscode from "vscode";
 import { platform } from "os";
+import { exec } from "child_process";
+import { promisify } from "util";
 import { Clipper, DarwinClipper, LinuxClipper, WindowsClipper } from "./clipper";
+
+const execAsync = promisify(exec);
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('Congratulations, your extension "Code Clipper" is now active!');
 
   const os = platform();
+
+  const config = vscode.workspace.getConfiguration("code-clipper");
+  const openDirectoryAfterClipping: boolean = config.get("openDirectoryAfterClipping") ?? true;
 
   let clipper: Clipper;
   switch (os) {
@@ -25,14 +32,26 @@ export function activate(context: vscode.ExtensionContext) {
   const clipCode = vscode.commands.registerCommand("code-clipper.clip-code", async () => {
     vscode.commands.executeCommand("editor.action.clipboardCopyWithSyntaxHighlightingAction");
     const originalHTML: string = await clipper.getClipboardHTML();
-
     const withLineNumberHTML: string = clipper.addLineNumberToHTML(originalHTML);
-
-    const fileBaseName = await clipper.outputHTMLStringAsImage(context, withLineNumberHTML);
-    clipper.putImageInClipboard(context, fileBaseName);
-    console.log("The code clip is ready in your clipboard!!!");
-
-    // vscode.log("image generated success")
+    const filePath = await clipper.outputHTMLStringAsImage(context, withLineNumberHTML);
+    if (openDirectoryAfterClipping) {
+      switch (os) {
+        case "darwin":
+          await execAsync(`open -R "${filePath.fsPath}"`);
+          break;
+        case "win32":
+          break;
+        case "linux":
+          break;
+        default:
+          console.error(
+            "Can not open the file explorer on your OS. " +
+              "Please open it yourself. " +
+              "(disable this message by setting openDirectoryAfterClipping to false)"
+          );
+      }
+    }
+    console.log(`The code clip is ready at "${filePath.fsPath}"!!!`);
   });
   context.subscriptions.push(clipCode);
 
@@ -40,32 +59,13 @@ export function activate(context: vscode.ExtensionContext) {
     "code-clipper.clip-code-as-plain-text",
     async () => {
       vscode.commands.executeCommand("editor.action.clipboardCopyWithSyntaxHighlightingAction");
-      const originalHTML: string = await clipper.getClipboardHTML();
       const originalText: string = await clipper.getClipboardText();
-
-      const withLineNumberHTML: string = clipper.addLineNumberToHTML(originalHTML);
       const onlyLineNumberText: string = clipper.addLineNumberToText(originalText);
-
-      clipper.setClipboard(context, withLineNumberHTML, onlyLineNumberText);
+      clipper.setClipboard(onlyLineNumberText);
       console.log("The code is ready in your clipboard!!!");
     }
   );
   context.subscriptions.push(clipCodeAsPlainText);
-
-  const clipCodeSaveImageOnly = vscode.commands.registerCommand(
-    "code-clipper.clip-code-save-image-only",
-    async () => {
-      vscode.commands.executeCommand("editor.action.clipboardCopyWithSyntaxHighlightingAction");
-      const originalHTML: string = await clipper.getClipboardHTML();
-
-      const withLineNumberHTML: string = clipper.addLineNumberToHTML(originalHTML);
-
-      const fileBaseName = await clipper.outputHTMLStringAsImage(context, withLineNumberHTML);
-      const filePath = vscode.Uri.joinPath(context.globalStorageUri, `${fileBaseName}.png`);
-      console.log(`The code clip is ready at "${filePath.fsPath}"!!!`);
-    }
-  );
-  context.subscriptions.push(clipCodeSaveImageOnly);
 }
 
 // This method is called when your extension is deactivated

@@ -50,10 +50,12 @@ For example:
 
 This extension contributes the following settings:
 
-- puppeteer path: must have
+- puppeteerPath: must have
   common for MacOS: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
   common for Windows:
   common for Linux:
+- clipSavingDirectory: null (default) / string
+  Config where to save the code clip to. If not set, the clips will be saved to the extension's storage directory.
 - openDirectoryAfterClipping: True (default) / False
 
 may config output png or webp or jpg

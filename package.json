@@ -3,6 +3,7 @@
   "displayName": "Code Clipper",
   "description": "Clip your code with your syntax highlighting and line number!",
   "version": "0.0.1",
+  "publisher": "arom1a",
   "engines": {
     "vscode": "^1.95.0"
   },
@@ -20,10 +21,26 @@
       {
         "command": "code-clipper.clip-code-as-plain-text",
         "title": "Clip Code as Plain Text"
-      },
+      }
+    ],
+    "configuration": [
       {
-        "command": "code-clipper.clip-code-save-image-only",
-        "title": "Clip Code Save Image Only"
+        "title": "Code Clipper Configurations",
+        "properties": {
+          "code-clipper.puppeteerPath": {
+            "type": "string",
+            "description": "The path to puppeteer"
+          },
+          "code-clipper.clipSavingDirectory": {
+            "type": "string",
+            "description": "Config where to save the code clip to. If not set, the clips will be saved to the extension's storage directory.\nExamples values: `/Users/${username}/Downloads/` (MacOS), `` (Windows), `` (Linux)"
+          },
+          "code-clipper.openDirectoryAfterClipping": {
+            "type": "boolean",
+            "default": "true",
+            "description": "Config whether to open the saving directory or not."
+          }
+        }
       }
     ]
   },
@@ -48,5 +65,15 @@
   },
   "dependencies": {
     "puppeteer-core": "^23.10.1"
-  }
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/arom1a/code-clipper/issues",
+    "email": "f2940015504@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arom1a/code-clipper.git"
+  },
+  "homepage": "https://github.com/arom1a/code-clipper"
 }
