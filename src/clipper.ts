@@ -32,11 +32,9 @@ export class Clipper {
       .replaceAll("<div><span", '<div><span id="lineNum"> 0 </span><span')
       .replaceAll("<br>", '<span id="lineNum"> 0 </span><br>')
       .replace('<div style="', '<div style="width: fit-content; padding: 1em 2em 1em 0; ');
-    // console.log(result);
 
     const maxLineNumber =
       result.match(new RegExp('<span id="lineNum"> 0 </span>', "g"))?.length ?? 0;
-    // console.log(`maxLineNumber in ToHTML: ${maxLineNumber}`);
     if (maxLineNumber === 0) {
       throw new Error("Incorrect HTML: No line number found");
     }
@@ -56,7 +54,6 @@ export class Clipper {
     let result: string = "";
 
     const maxLineNumber = (originalText.match(new RegExp("\n", "g"))?.length ?? 0) + 1;
-    // console.log(`maxLineNumber in ToText: ${maxLineNumber}`);
 
     originalText.split("\n").forEach((line, i) => {
       result += formattedLineNumber(i + 1, maxLineNumber).replaceAll(" ", "0") + ": " + line + "\n";
@@ -87,7 +84,6 @@ export class Clipper {
           hour12: false,
         })
         .replaceAll(":", "-");
-    // console.log(`baseName: ${baseName}`);
     const HTMLUri = vscode.Uri.joinPath(context.globalStorageUri, `${fileBaseName}.html`);
 
     const fileSystem = vscode.workspace.fs;
@@ -142,7 +138,6 @@ export class DarwinClipper extends Clipper {
         await execAsync('osascript -e "get «class HTML» of (the clipboard as record)"')
       ).stdout.trim();
       const hexResult = stdout.substring(10, stdout.length - 1);
-      // console.log(`hexResult: ${hexResult}`);
       const buffer = Buffer.from(hexResult, "hex");
       const originalResult = buffer.toString();
       return originalResult;

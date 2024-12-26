@@ -9,13 +9,13 @@ const execAsync = promisify(exec);
 export function activate(context: vscode.ExtensionContext) {
   console.log('Congratulations, your extension "Code Clipper" is now active!');
 
-  const os = platform();
+  const OS = platform();
 
   const config = vscode.workspace.getConfiguration("code-clipper");
   const openDirectoryAfterClipping: boolean = config.get("openDirectoryAfterClipping") ?? true;
 
   let clipper: Clipper;
-  switch (os) {
+  switch (OS) {
     case "darwin":
       clipper = new DarwinClipper();
       break;
@@ -35,7 +35,7 @@ export function activate(context: vscode.ExtensionContext) {
     const withLineNumberHTML: string = clipper.addLineNumberToHTML(originalHTML);
     const filePath = await clipper.outputHTMLStringAsImage(context, withLineNumberHTML);
     if (openDirectoryAfterClipping) {
-      switch (os) {
+      switch (OS) {
         case "darwin":
           await execAsync(`open -R "${filePath.fsPath}"`);
           break;
@@ -44,14 +44,15 @@ export function activate(context: vscode.ExtensionContext) {
         case "linux":
           break;
         default:
-          console.error(
+          await vscode.window.showErrorMessage(
             "Can not open the file explorer on your OS. " +
               "Please open it yourself. " +
               "(disable this message by setting openDirectoryAfterClipping to false)"
           );
+          throw new Error("Can not open the file explorer");
       }
     }
-    console.log(`The code clip is ready at "${filePath.fsPath}"!!!`);
+    await vscode.window.showInformationMessage(`The code clip is ready at "${filePath.fsPath}"!`);
   });
   context.subscriptions.push(clipCode);
 
@@ -62,7 +63,7 @@ export function activate(context: vscode.ExtensionContext) {
       const originalText: string = await clipper.getClipboardText();
       const onlyLineNumberText: string = clipper.addLineNumberToText(originalText);
       clipper.setClipboard(onlyLineNumberText);
-      console.log("The code is ready in your clipboard!!!");
+      await vscode.window.showInformationMessage("The code is ready in your clipboard!");
     }
   );
   context.subscriptions.push(clipCodeAsPlainText);
