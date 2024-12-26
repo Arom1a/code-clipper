@@ -114,9 +114,9 @@ export class Clipper {
 
     let imageUri = clipSavingDirectory
       ? vscode.Uri.parse(clipSavingDirectory + `${fileBaseName}.png`)
-      : vscode.Uri.joinPath(context.globalStorageUri, `${fileBaseName}.png`);
+      : vscode.Uri.joinPath(context.globalStorageUri, `clips/${fileBaseName}.png`);
     try {
-      fileSystem.stat(vscode.Uri.joinPath(imageUri, "../"));
+      await fileSystem.stat(vscode.Uri.joinPath(imageUri, "../"));
     } catch {
       fileSystem.createDirectory(vscode.Uri.joinPath(imageUri, "../"));
     }
