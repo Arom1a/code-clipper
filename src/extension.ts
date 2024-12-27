@@ -9,9 +9,6 @@ export function activate(context: vscode.ExtensionContext) {
 
   const OS = platform();
 
-  const config = vscode.workspace.getConfiguration("code-clipper");
-  const openDirectoryAfterClipping: boolean = config.get("openDirectoryAfterClipping") ?? true;
-
   let clipper: Clipper;
   switch (OS) {
     case "darwin":
@@ -28,6 +25,9 @@ export function activate(context: vscode.ExtensionContext) {
   }
 
   const clipCode = vscode.commands.registerCommand("code-clipper.clip-code", async () => {
+    const config = vscode.workspace.getConfiguration("code-clipper");
+    const openDirectoryAfterClipping: boolean = config.get("openDirectoryAfterClipping") ?? true;
+
     vscode.commands.executeCommand("editor.action.clipboardCopyWithSyntaxHighlightingAction");
     const originalHTML: string = await clipper.getClipboardHTML();
     const withLineNumberHTML: string = clipper.addLineNumberToHTML(originalHTML);
