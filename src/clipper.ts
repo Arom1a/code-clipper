@@ -6,7 +6,12 @@ import puppeteer from "puppeteer-core";
 const execAsync = promisify(exec);
 
 const config = vscode.workspace.getConfiguration("code-clipper");
-const puppeteerPath = config.get("puppeteerPath");
+const puppeteerPath: string =
+  config.get("puppeteerPath") ??
+  (() => {
+    vscode.window.showErrorMessage("`puppeteerPath is not defined in the settings!`");
+    throw new Error("puppeteerPath is not defined.");
+  })();
 const clipSavingDirectory = config.get("clipSavingDirectory");
 
 export function formattedLineNumber(num: number, max: number): string {
@@ -69,7 +74,7 @@ export class Clipper {
   async outputHTMLStringAsImage(
     context: vscode.ExtensionContext,
     HTMLString: string
-  ): Promise<vscode.Uri> {
+  ): Promise<vscode.Uri | undefined> {
     let date = new Date()
       .toLocaleString("en-US", { year: "numeric", month: "2-digit", day: "numeric" })
       .split("/");
@@ -97,10 +102,20 @@ export class Clipper {
       throw new Error(`Error when writing to file: ${err}`);
     }
 
-    const browser = await puppeteer.launch({
-      executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-      args: ["--headless"],
-    });
+    const browser = await (async () => {
+      try {
+        return await puppeteer.launch({
+          executablePath: puppeteerPath,
+          args: ["--headless"],
+        });
+      } catch {
+        vscode.window.showErrorMessage("Puppeteer isn't launching. Please check the path.");
+        return undefined;
+      }
+    })();
+    if (browser === undefined) {
+      return undefined;
+    }
     const page = await browser.newPage();
     // set th screen to be high resolution to get better screenshots
     await page.setViewport({ width: 800, height: 800, deviceScaleFactor: 2 });

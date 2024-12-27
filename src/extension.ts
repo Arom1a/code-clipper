@@ -4,8 +4,6 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import { Clipper, DarwinClipper, LinuxClipper, WindowsClipper } from "./clipper";
 
-const execAsync = promisify(exec);
-
 export function activate(context: vscode.ExtensionContext) {
   console.log('Congratulations, your extension "Code Clipper" is now active!');
 
@@ -34,6 +32,7 @@ export function activate(context: vscode.ExtensionContext) {
     const originalHTML: string = await clipper.getClipboardHTML();
     const withLineNumberHTML: string = clipper.addLineNumberToHTML(originalHTML);
     const filePath = await clipper.outputHTMLStringAsImage(context, withLineNumberHTML);
+    if (filePath === undefined) return;
     if (openDirectoryAfterClipping) await clipper.revealInFileExplorer(filePath);
     await vscode.window.showInformationMessage(
       `The code clip is ready at "${filePath.fsPath}"!\n` +
