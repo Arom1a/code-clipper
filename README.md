@@ -1,8 +1,8 @@
 # Code Clipper
 
 <div align="center">
-  <img height="200" src="./images/icon_light.svg" alt="icon light">
-  <img height="200" src="./images/icon_dark.svg" alt="icon dark">
+  <img height="200" src="./images/icon_light.png" alt="icon light">
+  <img height="200" src="./images/icon_dark.png" alt="icon dark">
 </div>
 
 Clip code with **your IDE's theme** and **line numbers**!
